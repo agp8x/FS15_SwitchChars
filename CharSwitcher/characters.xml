@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<vehicle type="dummy">
+    <characterNode index="0>9|0" cameraMinDistance="1.5" filename="$dataS2/character/player/player.i3d" characterMesh="1" characterGloves="2" characterSkin="0" spineNode="0|0" leftArmIKChainId="leftArm" rightArmIKChainId="rightArm" spineRotation="180 0 105" >
+        <ikChains>
+            <ikChain id="rightFoot" target="0>9|1" targetOffset="0 0.1 0" alignToTarget="true" isDirtyOnLoad="true" >
+                <node index="0|1" />
+                <node index="0|1|0"     minRx="0" maxRx="0" minRy="-30" maxRy="30" minRz="0"   maxRz="90" />
+                <node index="0|1|0|0"   minRx="0" maxRx="0" minRy="0"   maxRy="0"  minRz="-100" maxRz="-7" />
+                <node index="0|1|0|0|0" />
+            </ikChain>
+            <ikChain id="leftFoot" target="0>9|2" targetOffset="0 0.1 0" alignToTarget="true" isDirtyOnLoad="true">
+                <node index="0|2"     />
+                <node index="0|2|0"     minRx="0" maxRx="0" minRy="-30" maxRy="30" minRz="0"   maxRz="90" />
+                <node index="0|2|0|0"   minRx="0" maxRx="0" minRy="0"   maxRy="0"  minRz="-100" maxRz="-7" />
+                <node index="0|2|0|0|0" />
+            </ikChain>
+            <ikChain id="rightArm" target="0>8|0|0" targetOffset="0.025 0.066 0" alignToTarget="true" isDirtyOnLoad="true">
+                <node index="0|0|0|1" />
+                <node index="0|0|0|1|0" minRx="-20" maxRx="20" minRy="-20" maxRy="20" minRz="-80" maxRz="80" />
+                <node index="0|0|0|1|0|0" minRx="-10" maxRx="10" minRy="0" maxRy="0" minRz="7"   maxRz="130" />
+                <node index="0|0|0|1|0|0|0" />
+                <rotationNode index="0|0|0|1|0|0|0|0" rotation="0 0 -60" />
+                <rotationNode index="0|0|0|1|0|0|0|0|0" rotation="0 0 -60" />
+                <rotationNode index="0|0|0|1|0|0|0|1" rotation="-90 20 -40" />
+                <rotationNode index="0|0|0|1|0|0|0|1|0" rotation="0 0 -40" />
+            </ikChain>
+            <ikChain id="leftArm" target="0>8|0|1" targetOffset="-0.025 0.066 0" alignToTarget="true" isDirtyOnLoad="true">
+                <node index="0|0|0|2" />
+                <node index="0|0|0|2|0" minRx="-20" maxRx="20" minRy="-20" maxRy="20" minRz="-80" maxRz="80" />
+                <node index="0|0|0|2|0|0" minRx="-10" maxRx="10" minRy="0" maxRy="0" minRz="7"   maxRz="130" />
+                <node index="0|0|0|2|0|0|0" />
+                <rotationNode index="0|0|0|2|0|0|0|0" rotation="0 0 -60" />
+                <rotationNode index="0|0|0|2|0|0|0|0|0" rotation="0 0 -60" />
+                <rotationNode index="0|0|0|2|0|0|0|1" rotation="-90 20 -40" />
+                <rotationNode index="0|0|0|2|0|0|0|1|0" rotation="0 0 -40" />
+            </ikChain>
+        </ikChains>
+    </characterNode>
+	<characters this="gueldnerG40" >
+		<char filename="$dataS2/character/player/player.i3d" />
+		<char filename="../AFS15_ClassicsPackV2/bauer/man01.i3d" />
+	</characters>
+</vehicle>

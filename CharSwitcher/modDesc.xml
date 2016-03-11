@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<modDesc descVersion="20">
+    <author>agp8x</author>
+    <version>0.2</version>
+
+    <title>
+        <en>switch characters</en>
+        <de>charaktere wechseln</de>
+    </title>
+    <description>
+        <en>
+<![CDATA[switch characters]]>
+        </en>
+        <de>
+<![CDATA[charaktere wechseln]]>
+        </de>
+    </description>
+
+    <iconFilename>store_switchChars.dds</iconFilename>
+    <multiplayer supported="false"/>
+    <specializations>
+        <specialization name="SwitchChars" className="SwitchChars" filename="SwitchChars.lua"/>
+    </specializations>
+</modDesc>
