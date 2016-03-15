@@ -5,9 +5,14 @@
 -- @author  agp8x <ls@agp8x.org>
 -- @date  10.03.16
 -- 0.1: 11.03.16
---		* swithcing works
+--		* switching works
+-- 0.2: 11.03.16
+--		* global installation to all steerables
+-- 0.3: 15.03.16
+--		* save and load
+--		* multiplayer
 --
-local defaultChainFile = Utils.getFilename("characters.xml", g_currentModDirectory);
+local chars_dir = g_currentModDirectory;
 
 SwitchChars = {};
 
@@ -15,18 +20,18 @@ function SwitchChars.prerequisitesPresent(specializations)
 	return SpecializationUtil.hasSpecialization(Steerable, specializations);
 end;
 function SwitchChars:load(xmlFile)
-	self.isSelectable=true;
-	
+	--self.isSelectable=true; --TODO rly?
 	self.switchableCharacters = {}
+	local xmlFile2=loadXMLFile("charChains", Utils.getFilename("characters.xml", chars_dir))
 	local i=0;
 	while true do
 		local key = string.format("vehicle.characters.char(%d)", i);
-		if not hasXMLProperty(xmlFile, key) then
+		if not hasXMLProperty(xmlFile2, key) then
             break;
         end;
-		local filename=getXMLString(xmlFile, key.."#filename");
+		local filename=getXMLString(xmlFile2, key.."#filename");
 		if filename ~=nil then
-		    local path = Utils.getFilename(filename, self.baseDirectory);
+		    local path = Utils.getFilename(filename, chars_dir);
 		    if fileExists(path) then
     			table.insert(self.switchableCharacters, {filename=path});
 			else
@@ -44,9 +49,19 @@ function SwitchChars:load(xmlFile)
 		spineRot = Utils.getRadiansFromString(getXMLString(xmlFile, "vehicle.characterNode#spineRotation"), 3)
 	}
 	
-	self.charCurrent=0;
+	self.charCurrent=1;
 	self.charCount=table.getn(self.switchableCharacters);
 	self.updateChar=SwitchChars.updateChar;
+	self.chainTargets={}
+	local i=0;
+	while true do
+		local key = string.format("vehicle.characterNode.ikChains.ikChain(%d)#target", i);
+		if not hasXMLProperty(xmlFile, key) then
+			break;
+		end;
+		table.insert(self.chainTargets, {target=getXMLString(xmlFile, key)});
+		i=i+1;
+	end;
 end;
 function SwitchChars:delete()
 end;
@@ -55,8 +70,14 @@ end;
 function SwitchChars:writeStream(streamId, connection)
 end;
 function SwitchChars:loadFromAttributesAndNodes(xmlFile, key, resetVehicles)
+    local newChar = Utils.getNoNil(getXMLInt(xmlFile, key.."#character"), 1);
+	self:updateChar(newChar);
+    return BaseMission.VEHICLE_LOAD_OK;
 end;
 function SwitchChars:getSaveAttributesAndNodes(nodeIdent)
+    local nodes = "";
+	attributes = 'character="'..self.charCurrent..'"';
+    return attributes,nodes;
 end;
 function SwitchChars:mouseEvent(posX, posY, isDown, isUp, button)
 end;
@@ -67,19 +88,22 @@ function SwitchChars:update(dt)
         if InputBinding.hasEvent(InputBinding.IMPLEMENT_EXTRA3) then
 			local newChar=self.charCurrent+1;
 			if self.switchableCharacters[newChar] == nil then
-				newChar=0;
+				newChar=1;
 			end;
-			self:updateChar(newChar);
-			self.charCurrent=newChar;
+			if newChar ~= self.charCurrent then
+				SwitchCharEvent.sendEvent(self, newChar);
+				self:updateChar(newChar);
+				self.charCurrent=newChar;
+			end;
 		end;
 	end;
-	--load: Steerable:loadSettingsFromXML(xmlFile) [l. 72]
 end;
 function SwitchChars:updateTick(dt)
 end;
 function SwitchChars:draw()
 end;
 function SwitchChars:updateChar(newChar)
+	--print("local update to: ", newChar)
 	if self.switchableCharacters[newChar] ~= nil and self.characterNode ~=nil then
 		unlink(self.characterSkin);
 		unlink(self.characterMesh);
@@ -109,12 +133,18 @@ function SwitchChars:updateChar(newChar)
 			end;
 		end;
 		self.characterFilename = self.switchableCharacters[newChar].filename;
-		self:setCharacterVisibility(true);
+		self:setCharacterVisibility(false);
 	end;
 	--ikChains
 	self.ikChains={};
 	self.ikChainsById={};
-	local xmlFile=loadXMLFile("charChains", defaultChainFile)
+	local xmlFile=loadXMLFile("charChains", Utils.getFilename("characters.xml", chars_dir))
+	--overwrite ikChain#targets
+	for k,v in pairs(self.chainTargets) do
+		local key=string.format("vehicle.characterNode.ikChains.ikChain(%d)#target", k-1)
+		setXMLString(xmlFile, key, self.chainTargets[k].target);
+	end;
+	--
 	local i = 0;
 	while true do
 		local key = string.format("vehicle.characterNode.ikChains.ikChain(%d)", i);
@@ -123,12 +153,11 @@ function SwitchChars:updateChar(newChar)
 		end;
 		local chain = IKUtil.loadIKChain(xmlFile, key, self.components, skinBasenode, self.ikChains, self.ikChainsById, self.getParentComponent, self);
 		if chain ~= nil then
-			--print(tostring(chain))
 			self.characterIsSkinned = true;
 		end;
 		i = i + 1;
 	end;
-	--post
+	--postLoad
     if self.characterMesh ~= nil then
         link(getRootNode(), self.characterMesh);
         if self.characterGloves ~= nil then
@@ -140,42 +169,48 @@ function SwitchChars:updateChar(newChar)
         end;
     end;
 end;
-function SwitchChars:loadSettingsFromXML_own(xmlFile)
---TODO: split: store indices & load i3d-file
---TODO: probably unlink some stuff
---TODO: maybe call from load()?
-    if self.characterNode ~= nil then
-        --[[self.characterCameraMinDistance = Utils.getNoNil(getXMLFloat(xmlFile, "vehicle.characterNode#cameraMinDistance"), 1.5);
-        self.characterDistanceRefNode = Utils.indexToObject(self.components, getXMLString(xmlFile, "vehicle.characterNode#distanceRefNode"));
-        if self.characterDistanceRefNode == nil then
-            self.characterDistanceRefNode = self.characterNode;
-        end;
-        setVisibility(self.characterNode, false);
-]]
-        local skinBasenode = self.components;
-        local filename = getXMLString(xmlFile, "vehicle.characterNode#filename");
-        if filename ~= nil then
-            filename = Utils.getFilename(filename, self.baseDirectory);
-            local i3dNode = Utils.loadSharedI3DFile(filename);
-            if i3dNode ~= 0 then
-                self.characterSkin = Utils.indexToObject(i3dNode, getXMLString(xmlFile, "vehicle.characterNode#characterSkin"));
-                self.characterMesh = Utils.indexToObject(i3dNode, getXMLString(xmlFile, "vehicle.characterNode#characterMesh"));
-                self.characterGloves = Utils.indexToObject(i3dNode, getXMLString(xmlFile, "vehicle.characterNode#characterGloves"));
-                self.characterSpineNode = Utils.indexToObject(i3dNode, getXMLString(xmlFile, "vehicle.characterNode#spineNode"));
-                local x,y,z  = Utils.getVectorFromString(Utils.getNoNil(getXMLString(xmlFile, "vehicle.characterNode#skinOffset"), "0 0.14 0"));
-                setClipDistance(self.characterMesh, 150);
-                setClipDistance(self.characterGloves, 50);
-                link(self.characterNode, self.characterSkin);
-                setTranslation(self.characterSkin, x,y,z);
-                link(self.characterNode, self.characterMesh);
-                if self.characterGloves ~= nil then
-                    link(self.characterNode, self.characterGloves);
-                    setVisibility(self.characterGloves, false);
-                end;
-                skinBasenode = self.characterNode;
-                delete(i3dNode);
-            end;
-            self.characterFilename = filename;
-        end;
-    end;
+
+--EVENT
+
+SwitchCharEvent = {};
+SwitchCharEvent_mt=Class(SwitchCharEvent, Event);
+
+InitEventClass(SwitchCharEvent, "SwitchCharEvent");
+
+function SwitchCharEvent:emptyNew()
+	local self = Event:new(SwitchCharEvent_mt);
+	return self;
+end;
+
+function SwitchCharEvent:new(object, newChar)
+	local self=SwitchCharEvent:emptyNew()
+	self.object=object;
+	self.newChar=newChar;
+	return self;
+end;
+function SwitchCharEvent:readStream(streamId, connection)
+	self.object=networkGetObject(streamReadInt32(streamId));
+	self.newChar=streamReadInt8(streamId);
+	self:run(connection);
+end;
+function SwitchCharEvent:writeStream(streamId, connection)
+	streamWriteInt32(streamId, networkGetObjectId(self.object));
+	streamWriteInt8(streamId, self.newChar);
+end;
+function SwitchCharEvent:run(connection)
+	if not connection:getIsServer() then
+		g_server:broadcastEvent(SwitchCharEvent:new(self.vehicle, self.newChar), nil, connection, self.object);
+	end;
+	--print("NETWORK update: ", self.newChar, "obj: ", type(self.object))
+	self.object:updateChar(self.newChar);
+	self.object:setCharacterVisibility(true);
+end;
+function SwitchCharEvent.sendEvent(vehicle, newChar, noEventSend)
+	if noEventSend == nil or noEventSend == false then
+		if g_server ~= nil then
+			g_server:broadcastEvent(SwitchCharEvent:new(vehicle, newChar), nil, nil, vehicle);
+		else
+			g_client:getServerConnection():sendEvent(SwitchCharEvent:new(vehicle, newChar));
+		end;
+	end;
 end;

@@ -1,6 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <vehicle type="dummy">
-    <characterNode index="0>9|0" cameraMinDistance="1.5" filename="$dataS2/character/player/player.i3d" characterMesh="1" characterGloves="2" characterSkin="0" spineNode="0|0" leftArmIKChainId="leftArm" rightArmIKChainId="rightArm" spineRotation="180 0 105" >
+	<characters this="gueldnerG40" >
+		<char filename="$dataS2/character/player/player.i3d" />
+		<char filename="characters/man01.i3d" />
+		<char filename="characters/man02.i3d" />
+		<char filename="characters/man03.i3d" />
+		<char filename="characters/man04.i3d" />
+		<char filename="characters/man05.i3d" />
+		<char filename="characters/man06.i3d" />
+		<char filename="characters/woman01.i3d" />
+		<char filename="characters/woman02.i3d" />
+		<char filename="characters/woman03.i3d" />
+		<char filename="characters/woman04.i3d" />
+		<char filename="characters/woman05.i3d" />
+		<char filename="characters/woman06.i3d" />
+	</characters>
+    <characterNode>
         <ikChains>
             <ikChain id="rightFoot" target="0>9|1" targetOffset="0 0.1 0" alignToTarget="true" isDirtyOnLoad="true" >
                 <node index="0|1" />
@@ -36,8 +51,4 @@
             </ikChain>
         </ikChains>
     </characterNode>
-	<characters this="gueldnerG40" >
-		<char filename="$dataS2/character/player/player.i3d" />
-		<char filename="../AFS15_ClassicsPackV2/bauer/man01.i3d" />
-	</characters>
 </vehicle>
