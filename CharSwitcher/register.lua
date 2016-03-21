@@ -1,6 +1,6 @@
 SpecializationUtil.registerSpecialization("SwitchChars", "SwitchChars", g_currentModDirectory.."SwitchChars.lua")
 --accessing l18n with our text does work here, however not in the speci, so we save it
-SwitchChars.localized_text=g_i18n:getText("agp8x_char_switch");
+SwitchChars.localized_text = g_i18n:getText("agp8x_char_switch");
 
 SwitchChars_Register = {};
 

@@ -4,26 +4,8 @@
 --
 -- @author  agp8x <ls@agp8x.org>
 -- @date  10.03.16
--- 0.1: 11.03.16
---		* switching works
--- 0.2: 11.03.16
---		* global installation to all steerables
--- 0.3: 15.03.16
---		* save and load
---		* multiplayer
--- 0.3.5: 15.03.16 # 0.3.5 means halfstep towards 0.4
---		* sample help text
--- 0.3.6: 17.03.16
---		* updated key to implemenet_extra4
---		* improved multiplayer routing of events
--- 0.3.7: 18.03.16
---		* fix mp sync
---		* tried updateStreams
--- 0.4: 21.03.16
---		* promoted 0.3.7
 -- 0.5: 21.03.16
---		* fix l10n
---
+
 local chars_dir = g_currentModDirectory;
 
 SwitchChars = {};
@@ -32,17 +14,16 @@ function SwitchChars.prerequisitesPresent(specializations)
 	return SpecializationUtil.hasSpecialization(Steerable, specializations);
 end;
 function SwitchChars:load(xmlFile)
-	--self.isSelectable=true; --TODO rly?
 	self.switchableCharacters = {}
 	local xmlFile2=loadXMLFile("charChains", Utils.getFilename("characters.xml", chars_dir))
-	local i=0;
+	local i = 0;
 	while true do
 		local key = string.format("vehicle.characters.char(%d)", i);
 		if not hasXMLProperty(xmlFile2, key) then
             break;
         end;
-		local filename=getXMLString(xmlFile2, key.."#filename");
-		if filename ~=nil then
+		local filename = getXMLString(xmlFile2, key.."#filename");
+		if filename ~= nil then
 		    local path = Utils.getFilename(filename, chars_dir);
 		    if fileExists(path) then
     			table.insert(self.switchableCharacters, {filename=path});
@@ -50,14 +31,14 @@ function SwitchChars:load(xmlFile)
 			    print("ERROR: character not found: ", path);
 		    end;
 		end;
-		i=i+1;
+		i = i + 1;
 	end;
-	self.charConf={
-		skin=getXMLString(xmlFile, "vehicle.characterNode#characterSkin"), 
-		mesh=getXMLString(xmlFile, "vehicle.characterNode#characterMesh"), 
-		gloves=getXMLString(xmlFile, "vehicle.characterNode#characterGloves"), 
-		spineNode=getXMLString(xmlFile, "vehicle.characterNode#spineNode"), 
-		offsets=Utils.getNoNil(getXMLString(xmlFile, "vehicle.characterNode#skinOffset"), "0 0.14 0"), 
+	self.charConf = {
+		skin = getXMLString(xmlFile, "vehicle.characterNode#characterSkin"), 
+		mesh = getXMLString(xmlFile, "vehicle.characterNode#characterMesh"), 
+		gloves = getXMLString(xmlFile, "vehicle.characterNode#characterGloves"), 
+		spineNode = getXMLString(xmlFile, "vehicle.characterNode#spineNode"), 
+		offsets = Utils.getNoNil(getXMLString(xmlFile, "vehicle.characterNode#skinOffset"), "0 0.14 0"), 
 		spineRot = Utils.getRadiansFromString(getXMLString(xmlFile, "vehicle.characterNode#spineRotation"), 3)
 	}
 	
@@ -65,41 +46,25 @@ function SwitchChars:load(xmlFile)
 	self.charCount=table.getn(self.switchableCharacters);
 	self.updateChar=SwitchChars.updateChar;
 	self.chainTargets={}
-	local i=0;
+	local i = 0;
 	while true do
 		local key = string.format("vehicle.characterNode.ikChains.ikChain(%d)#target", i);
 		if not hasXMLProperty(xmlFile, key) then
 			break;
 		end;
 		table.insert(self.chainTargets, {target=getXMLString(xmlFile, key)});
-		i=i+1;
+		i = i + 1;
 	end;
-	--self.charDirtyFlag = self:getNextDirtyFlag();
 end;
 function SwitchChars:delete()
 end;
 function SwitchChars:readStream(streamId, connection)
-	local newChar=streamReadInt8(streamId);
+	local newChar = streamReadInt8(streamId);
 	self:updateChar(newChar);
 end;
 function SwitchChars:writeStream(streamId, connection)
 	streamWriteInt8(streamId, self.charCurrent);
 end;
---[[function SwitchChars:readUpdateStream(streamId, timestamp, connection)
-	if connection:getIsServer() then
-        if streamReadBool(streamId) then
-			newChar=streamReadInt8(streamId);
-			self:updateChar(newChar);
-		end;
-	end;
-end;
-function SwitchChars:writeUpdateStream(streamId, connection, dirtyMask)
-	if not connection:getIsServer() then
-		if streamWriteBool(streamId, bitAND(dirtyMask, self.charDirtyFlag) ~= 0) then
-			streamWriteInt8(streamId, self.charCurrent);
-		end;
-	end;
-end;]]
 function SwitchChars:loadFromAttributesAndNodes(xmlFile, key, resetVehicles)
     local newChar = Utils.getNoNil(getXMLInt(xmlFile, key.."#character"), 1);
 	self:updateChar(newChar);
@@ -117,13 +82,12 @@ end;
 function SwitchChars:update(dt)
     if self:getIsActiveForInput() then
         if InputBinding.hasEvent(InputBinding.IMPLEMENT_EXTRA4) then
-			local newChar=self.charCurrent+1;
+			local newChar = self.charCurrent+1;
 			if self.switchableCharacters[newChar] == nil then
 				newChar=1;
 			end;
 			if newChar ~= self.charCurrent then
 				SwitchCharEvent.sendEvent(self, newChar);
-				--self:raiseDirtyFlags(self.charDirtyFlag)
 				self:updateChar(newChar);
 			end;
 		end;
@@ -138,14 +102,14 @@ function SwitchChars:draw()
 end;
 function SwitchChars:updateChar(newChar)
 	if self.switchableCharacters[newChar] ~= nil and self.characterNode ~=nil then
-		self.charCurrent=newChar;
 		local visibility = getVisibility(self.characterNode);
 		unlink(self.characterSkin);
 		unlink(self.characterMesh);
 		if self.characterGloves ~= nil then
 			unlink(self.characterGloves);
 		end;
-		local i3dNode=Utils.loadSharedI3DFile(self.switchableCharacters[newChar].filename);
+		local i3dNode = Utils.loadSharedI3DFile(self.switchableCharacters[newChar].filename);
+		--Steerable.loadSettingsFromXML [90]
 		if i3dNode ~= 0 then
 			self.characterSkin = Utils.indexToObject(i3dNode, self.charConf.skin);
 			self.characterMesh = Utils.indexToObject(i3dNode, self.charConf.mesh);
@@ -168,17 +132,16 @@ function SwitchChars:updateChar(newChar)
 			end;
 		end;
 		self.characterFilename = self.switchableCharacters[newChar].filename;
-		self:setCharacterVisibility(visibility);
-		--ikChains
-		self.ikChains={};
-		self.ikChainsById={};
-		local xmlFile=loadXMLFile("charChains", Utils.getFilename("characters.xml", chars_dir))
-		--overwrite ikChain#targets
+		-- reset ikChains
+		self.ikChains = {};
+		self.ikChainsById = {};
+		local xmlFile = loadXMLFile("charChains", Utils.getFilename("characters.xml", chars_dir))
+		-- overwrite ikChain#targets
 		for k,v in pairs(self.chainTargets) do
-			local key=string.format("vehicle.characterNode.ikChains.ikChain(%d)#target", k-1)
+			local key = string.format("vehicle.characterNode.ikChains.ikChain(%d)#target", k-1)
 			setXMLString(xmlFile, key, self.chainTargets[k].target);
 		end;
-		--
+		-- continue
 		local i = 0;
 		while true do
 			local key = string.format("vehicle.characterNode.ikChains.ikChain(%d)", i);
@@ -202,6 +165,8 @@ function SwitchChars:updateChar(newChar)
 				link(getRootNode(), self.characterNode);
 			end;
 		end;
+		self:setCharacterVisibility(visibility);
+		self.charCurrent = newChar;
 	end;
 end;
 
@@ -218,14 +183,14 @@ function SwitchCharEvent:emptyNew()
 end;
 
 function SwitchCharEvent:new(object, newChar)
-	local self=SwitchCharEvent:emptyNew()
-	self.object=object;
-	self.newChar=newChar;
+	local self = SwitchCharEvent:emptyNew()
+	self.object = object;
+	self.newChar = newChar;
 	return self;
 end;
 function SwitchCharEvent:readStream(streamId, connection)
-	self.object=networkGetObject(streamReadInt32(streamId));
-	self.newChar=streamReadInt8(streamId);
+	self.object = networkGetObject(streamReadInt32(streamId));
+	self.newChar = streamReadInt8(streamId);
 	self:run(connection);
 end;
 function SwitchCharEvent:writeStream(streamId, connection)
