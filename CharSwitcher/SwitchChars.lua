@@ -15,50 +15,58 @@ function SwitchChars.prerequisitesPresent(specializations)
 end;
 function SwitchChars:load(xmlFile)
 	self.updateChar = SwitchChars.updateChar;
-	self.switchableCharacters = {}
 	if (not hasXMLProperty(xmlFile, "vehicle.characterNode#filename")) or getXMLString(xmlFile, "vehicle.characterNode#filename") == nil then
-		self.switchableCharacters = nil;
 		local filename = Utils.getFilename(getXMLString(xmlFile, "vehicle.filename"), g_currentModDirectory);
 		print("ERROR: legacy character found, no switchable characters at ", filename);
 		return;
 	end;
-	local xmlFile2 = loadXMLFile("charChains", Utils.getFilename("characters.xml", chars_dir))
-	-- load characters
-	local i = 0;
-	while true do
-		local key = string.format("vehicle.characters.char(%d)", i);
-		if not hasXMLProperty(xmlFile2, key) then
-            break;
-        end;
-		local filename = getXMLString(xmlFile2, key.."#filename");
-		local gloves = Utils.getNoNil(getXMLBool(xmlFile2, key.."#gloves"), false);
-		local push = Utils.getNoNil(getXMLBool(xmlFile2, key.."#push"), true);
-		if filename ~= nil then
-		    local path = Utils.getFilename(filename, chars_dir);
-		    if fileExists(path) then
-    			table.insert(self.switchableCharacters, {filename=path, gloves=gloves, push=push});
-			else
-			    print("ERROR: character not found: ", path);
-		    end;
+	
+	-- load characters once
+	if SwitchChars.switchableCharacters == nil then
+		local xmlFile2 = loadXMLFile("charChains", Utils.getFilename("characters.xml", chars_dir))
+		print("load characters");
+		local switchableCharacters = {}
+		local i = 0;
+		while true do
+			local key = string.format("vehicle.characters.char(%d)", i);
+			if not hasXMLProperty(xmlFile2, key) then
+				break;
+			end;
+			local filename = getXMLString(xmlFile2, key.."#filename");
+			local gloves = Utils.getNoNil(getXMLBool(xmlFile2, key.."#gloves"), false);
+			local push = Utils.getNoNil(getXMLBool(xmlFile2, key.."#push"), true);
+			if filename ~= nil then
+				local path = Utils.getFilename(filename, chars_dir);
+				if fileExists(path) then
+					table.insert(switchableCharacters, {filename=path, gloves=gloves, push=push});
+				else
+					print("ERROR: character not found: ", path);
+				end;
+			end;
+			i = i + 1;
 		end;
-		i = i + 1;
+		SwitchChars.switchableCharacters = switchableCharacters
+	
+		local pushDowns = {}
+		-- load node graph modifications
+		local i = 0;
+		while true do
+			local key = string.format("vehicle.pushDown.push(%d)", i);
+			if not hasXMLProperty(xmlFile2, key) then
+				break;
+			end;
+			local index = getXMLString(xmlFile2, key.."#index");
+			local name = getXMLString(xmlFile2, key.."#name");
+			if index ~= nil and name ~= nil then
+				table.insert(pushDowns, {index=index, name=name});
+			end;
+			i = i + 1;
+		end;
+		SwitchChars.pushDowns = pushDowns;
 	end;
 	
-	self.pushDowns={}
-	-- load node graph modifications
-	local i = 0;
-	while true do
-		local key = string.format("vehicle.pushDown.push(%d)", i);
-		if not hasXMLProperty(xmlFile2, key) then
-            break;
-        end;
-		local index = getXMLString(xmlFile2, key.."#index");
-		local name = getXMLString(xmlFile2, key.."#name");
-		if index ~= nil and name ~= nil then
-			table.insert(self.pushDowns, {index=index, name=name});
-		end;
-		i = i + 1;
-	end;
+	-- individual settings
+	self.charCurrent=1;
 	-- remember character settings per vehicle
 	self.charConf = {
 		skin = getXMLString(xmlFile, "vehicle.characterNode#characterSkin"), 
@@ -68,10 +76,7 @@ function SwitchChars:load(xmlFile)
 		offsets = Utils.getNoNil(getXMLString(xmlFile, "vehicle.characterNode#skinOffset"), "0 0.14 0"), 
 		spineRot = Utils.getRadiansFromString(getXMLString(xmlFile, "vehicle.characterNode#spineRotation"), 3)
 	}
-	
-	self.charCurrent=1;
 	self.chainTargets={}
-	--remember ikChains
 	local i = 0;
 	while true do
 		local key = string.format("vehicle.characterNode.ikChains.ikChain(%d)#target", i);
@@ -99,7 +104,7 @@ end;
 function SwitchChars:getSaveAttributesAndNodes(nodeIdent)
     local nodes = "";
 	local attributes = "";
-	if self.switchableCharacters ~= nil then
+	if self.charConf ~= nil then
 		attributes = 'character="'..self.charCurrent..'"';
 	end;
     return attributes,nodes;
@@ -110,9 +115,9 @@ function SwitchChars:keyEvent(unicode, sym, modifier, isDown)
 end;
 function SwitchChars:update(dt)
     if self:getIsActiveForInput() then
-        if InputBinding.hasEvent(InputBinding.IMPLEMENT_EXTRA4) and self.switchableCharacters ~= nil then
+        if InputBinding.hasEvent(InputBinding.IMPLEMENT_EXTRA4) and self.charConf ~= nil then
 			local newChar = self.charCurrent+1;
-			if self.switchableCharacters[newChar] == nil then
+			if SwitchChars.switchableCharacters[newChar] == nil then
 				newChar=1;
 			end;
 			if newChar ~= self.charCurrent then
@@ -125,23 +130,23 @@ end;
 function SwitchChars:updateTick(dt)
 end;
 function SwitchChars:draw()
-    if self:getIsActiveForInput() and self.switchableCharacters ~= nil then
+    if self:getIsActiveForInput() and self.charConf ~= nil then
         g_currentMission:addHelpButtonText(SwitchChars.localized_text, InputBinding.IMPLEMENT_EXTRA4);
 	end;
 end;
 function SwitchChars:updateChar(newChar)
-	if self.switchableCharacters ~= nil and self.switchableCharacters[newChar] ~= nil and self.characterNode ~= nil then
+	if self.charConf ~= nil and SwitchChars.switchableCharacters[newChar] ~= nil and self.characterNode ~= nil then
 		local visibility = getVisibility(self.characterNode);
 		unlink(self.characterSkin);
 		unlink(self.characterMesh);
 		if self.characterGloves ~= nil then
 			unlink(self.characterGloves);
 		end;
-		local i3dNode = Utils.loadSharedI3DFile(self.switchableCharacters[newChar].filename);
+		local i3dNode = Utils.loadSharedI3DFile(SwitchChars.switchableCharacters[newChar].filename);
 		--Steerable.loadSettingsFromXML [90]
 		if i3dNode ~= 0 then
-			if self.switchableCharacters[newChar].push then
-				for _,index in pairs(self.pushDowns) do
+			if SwitchChars.switchableCharacters[newChar].push then
+				for _,index in pairs(SwitchChars.pushDowns) do
 					-- extend node graph by rotNodes (basically automating Ingolf's idea)
 					local newNode = createTransformGroup(index.name);
 					local oldNode = Utils.indexToObject(i3dNode, index.index);
@@ -158,7 +163,7 @@ function SwitchChars:updateChar(newChar)
 			end;
 			self.characterSkin = Utils.indexToObject(i3dNode, self.charConf.skin);
 			self.characterMesh = Utils.indexToObject(i3dNode, self.charConf.mesh);
-			if self.switchableCharacters[newChar].gloves then
+			if SwitchChars.switchableCharacters[newChar].gloves then
 				self.characterGloves = Utils.indexToObject(i3dNode, self.charConf.gloves);
 			else
 				-- create dummy
@@ -181,7 +186,7 @@ function SwitchChars:updateChar(newChar)
 				setRotation(self.characterSpineNode, unpack(self.charConf.spineRot));
 			end;
 		end;
-		self.characterFilename = self.switchableCharacters[newChar].filename;
+		self.characterFilename = SwitchChars.switchableCharacters[newChar].filename;
 		-- reset ikChains
 		self.ikChains = {};
 		self.ikChainsById = {};
