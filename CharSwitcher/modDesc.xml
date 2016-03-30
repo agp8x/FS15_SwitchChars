@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <modDesc descVersion="23">
     <author>agp8x, Ingolf</author>
-    <version>0.5</version>
+    <version>0.7</version>
 
     <title>
         <en>Switch characters</en>
@@ -12,7 +12,7 @@
         <de><![CDATA[Figuren wechseln]]></de>
     </description>
 
-    <iconFilename>store_switchChars.dds</iconFilename>
+    <iconFilename>store.dds</iconFilename>
     <multiplayer supported="true"/>
 	<extraSourceFiles>
         <sourceFile filename="register.lua" />

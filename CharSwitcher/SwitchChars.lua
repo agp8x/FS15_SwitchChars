@@ -4,9 +4,12 @@
 --
 -- @author  agp8x <ls@agp8x.org>
 -- @date  10.03.16
--- 0.5: 21.03.16
+-- 0.6: 24.03.16
+-- 0.7 - light: 30.06.16
 
 local chars_dir = g_currentModDirectory;
+
+print("SWITCHCHARS: LIGHT");
 
 SwitchChars = {};
 
@@ -14,7 +17,13 @@ function SwitchChars.prerequisitesPresent(specializations)
 	return SpecializationUtil.hasSpecialization(Steerable, specializations);
 end;
 function SwitchChars:load(xmlFile)
+	self.updateChar=SwitchChars.updateChar;
 	self.switchableCharacters = {}
+	if (not hasXMLProperty(xmlFile, "vehicle.characterNode#filename")) or getXMLString(xmlFile, "vehicle.characterNode#filename") == nil then
+		self.switchableCharacters = nil;
+		print("ERROR: legacy character found, no switchable characters at ", Utils.getFilename(getXMLString(xmlFile, "vehicle.filename")));
+		return;
+	end;
 	local xmlFile2=loadXMLFile("charChains", Utils.getFilename("characters.xml", chars_dir))
 	local i = 0;
 	while true do
@@ -23,10 +32,11 @@ function SwitchChars:load(xmlFile)
             break;
         end;
 		local filename = getXMLString(xmlFile2, key.."#filename");
+		local gloves = Utils.getNoNil(getXMLBool(xmlFile2, key.."#gloves"), false);
 		if filename ~= nil then
 		    local path = Utils.getFilename(filename, chars_dir);
 		    if fileExists(path) then
-    			table.insert(self.switchableCharacters, {filename=path});
+    			table.insert(self.switchableCharacters, {filename=path, gloves=gloves});
 			else
 			    print("ERROR: character not found: ", path);
 		    end;
@@ -44,7 +54,6 @@ function SwitchChars:load(xmlFile)
 	
 	self.charCurrent=1;
 	self.charCount=table.getn(self.switchableCharacters);
-	self.updateChar=SwitchChars.updateChar;
 	self.chainTargets={}
 	local i = 0;
 	while true do
@@ -67,12 +76,16 @@ function SwitchChars:writeStream(streamId, connection)
 end;
 function SwitchChars:loadFromAttributesAndNodes(xmlFile, key, resetVehicles)
     local newChar = Utils.getNoNil(getXMLInt(xmlFile, key.."#character"), 1);
+	newChar=2;
 	self:updateChar(newChar);
     return BaseMission.VEHICLE_LOAD_OK;
 end;
 function SwitchChars:getSaveAttributesAndNodes(nodeIdent)
     local nodes = "";
-	attributes = 'character="'..self.charCurrent..'"';
+	local attributes = "";
+	if self.switchableCharacters ~= nil then
+		attributes = 'character="'..self.charCurrent..'"';
+	end;
     return attributes,nodes;
 end;
 function SwitchChars:mouseEvent(posX, posY, isDown, isUp, button)
@@ -81,7 +94,7 @@ function SwitchChars:keyEvent(unicode, sym, modifier, isDown)
 end;
 function SwitchChars:update(dt)
     if self:getIsActiveForInput() then
-        if InputBinding.hasEvent(InputBinding.IMPLEMENT_EXTRA4) then
+        if InputBinding.hasEvent(InputBinding.IMPLEMENT_EXTRA4) and  self.switchableCharacters ~= nil then
 			local newChar = self.charCurrent+1;
 			if self.switchableCharacters[newChar] == nil then
 				newChar=1;
@@ -96,12 +109,12 @@ end;
 function SwitchChars:updateTick(dt)
 end;
 function SwitchChars:draw()
-    if self:getIsActiveForInput() then
+    if self:getIsActiveForInput() and self.switchableCharacters ~= nil then
         g_currentMission:addHelpButtonText(SwitchChars.localized_text, InputBinding.IMPLEMENT_EXTRA4);
 	end;
 end;
 function SwitchChars:updateChar(newChar)
-	if self.switchableCharacters[newChar] ~= nil and self.characterNode ~=nil then
+	if self.switchableCharacters ~= nil and self.switchableCharacters[newChar] ~= nil and self.characterNode ~=nil then
 		local visibility = getVisibility(self.characterNode);
 		unlink(self.characterSkin);
 		unlink(self.characterMesh);
@@ -113,15 +126,19 @@ function SwitchChars:updateChar(newChar)
 		if i3dNode ~= 0 then
 			self.characterSkin = Utils.indexToObject(i3dNode, self.charConf.skin);
 			self.characterMesh = Utils.indexToObject(i3dNode, self.charConf.mesh);
-			self.characterGloves = Utils.indexToObject(i3dNode, self.charConf.gloves);
+			if self.switchableCharacters[newChar].gloves then
+				self.characterGloves = Utils.indexToObject(i3dNode, self.charConf.gloves);
+			else
+				self.characterGloves=nil;
+			end;
 			self.characterSpineNode = Utils.indexToObject(i3dNode, self.charConf.spineNode);
 			local x,y,z  = Utils.getVectorFromString(self.charConf.offsets);
 			setClipDistance(self.characterMesh, 150);
-			setClipDistance(self.characterGloves, 50);
 			link(self.characterNode, self.characterSkin);
 			setTranslation(self.characterSkin, x,y,z);
 			link(self.characterNode, self.characterMesh);
 			if self.characterGloves ~= nil then
+				setClipDistance(self.characterGloves, 50);
 				link(self.characterNode, self.characterGloves);
 				setVisibility(self.characterGloves, false);
 			end;
