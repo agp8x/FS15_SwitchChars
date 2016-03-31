@@ -2,9 +2,9 @@
 -- SwitchChars
 -- Class for switching characters, based on Ingolf's works
 --
--- @author  agp8x <ls@agp8x.org>
--- @date  10.03.16 (start)
--- 0.7: 30.06.16
+-- @author	agp8x <ls@agp8x.org>
+-- @date	10.03.16 (start)
+-- 1.0:	31.03.16
 
 local chars_dir = g_currentModDirectory;
 
@@ -17,14 +17,13 @@ function SwitchChars:load(xmlFile)
 	self.updateChar = SwitchChars.updateChar;
 	if (not hasXMLProperty(xmlFile, "vehicle.characterNode#filename")) or getXMLString(xmlFile, "vehicle.characterNode#filename") == nil then
 		local filename = Utils.getFilename(getXMLString(xmlFile, "vehicle.filename"), g_currentModDirectory);
-		print("ERROR: legacy character found, no switchable characters at ", filename);
+		print("NOTICE: unanimated character found, no switchable characters at ", filename);
 		return;
 	end;
 	
 	-- load characters once
 	if SwitchChars.switchableCharacters == nil then
 		local xmlFile2 = loadXMLFile("charChains", Utils.getFilename("characters.xml", chars_dir))
-		print("load characters");
 		local switchableCharacters = {}
 		local i = 0;
 		while true do
@@ -33,12 +32,11 @@ function SwitchChars:load(xmlFile)
 				break;
 			end;
 			local filename = getXMLString(xmlFile2, key.."#filename");
-			local gloves = Utils.getNoNil(getXMLBool(xmlFile2, key.."#gloves"), false);
 			local push = Utils.getNoNil(getXMLBool(xmlFile2, key.."#push"), true);
 			if filename ~= nil then
 				local path = Utils.getFilename(filename, chars_dir);
 				if fileExists(path) then
-					table.insert(switchableCharacters, {filename=path, gloves=gloves, push=push});
+					table.insert(switchableCharacters, {filename=path, push=push});
 				else
 					print("ERROR: character not found: ", path);
 				end;
@@ -46,6 +44,13 @@ function SwitchChars:load(xmlFile)
 			i = i + 1;
 		end;
 		SwitchChars.switchableCharacters = switchableCharacters
+		-- load addons
+		if BaseMission.switchCharsAddon ~= nil then
+			print("Load additional characters: ",table.getn(BaseMission.switchCharsAddon));
+			for _,v in pairs(BaseMission.switchCharsAddon) do
+				table.insert(SwitchChars.switchableCharacters, v);
+			end;
+		end;
 	
 		local pushDowns = {}
 		-- load node graph modifications
@@ -97,28 +102,28 @@ function SwitchChars:writeStream(streamId, connection)
 	streamWriteInt8(streamId, self.charCurrent);
 end;
 function SwitchChars:loadFromAttributesAndNodes(xmlFile, key, resetVehicles)
-    local newChar = Utils.getNoNil(getXMLInt(xmlFile, key.."#character"), 1);
+	local newChar = Utils.getNoNil(getXMLInt(xmlFile, key.."#character"), 1);
 	self:updateChar(newChar);
-    return BaseMission.VEHICLE_LOAD_OK;
+	return BaseMission.VEHICLE_LOAD_OK;
 end;
 function SwitchChars:getSaveAttributesAndNodes(nodeIdent)
-    local nodes = "";
+	local nodes = "";
 	local attributes = "";
 	if self.charConf ~= nil then
 		attributes = 'character="'..self.charCurrent..'"';
 	end;
-    return attributes,nodes;
+	return attributes,nodes;
 end;
 function SwitchChars:mouseEvent(posX, posY, isDown, isUp, button)
 end;
 function SwitchChars:keyEvent(unicode, sym, modifier, isDown)
 end;
 function SwitchChars:update(dt)
-    if self:getIsActiveForInput() then
-        if InputBinding.hasEvent(InputBinding.IMPLEMENT_EXTRA4) and self.charConf ~= nil then
-			local newChar = self.charCurrent+1;
+	if self:getIsActiveForInput() then
+		if InputBinding.hasEvent(InputBinding.IMPLEMENT_EXTRA4) and self.charConf ~= nil then
+			local newChar = self.charCurrent + 1;
 			if SwitchChars.switchableCharacters[newChar] == nil then
-				newChar=1;
+				newChar = 1;
 			end;
 			if newChar ~= self.charCurrent then
 				SwitchCharEvent.sendEvent(self, newChar);
@@ -130,8 +135,8 @@ end;
 function SwitchChars:updateTick(dt)
 end;
 function SwitchChars:draw()
-    if self:getIsActiveForInput() and self.charConf ~= nil then
-        g_currentMission:addHelpButtonText(SwitchChars.localized_text, InputBinding.IMPLEMENT_EXTRA4);
+	if self:getIsActiveForInput() and self.charConf ~= nil then
+		g_currentMission:addHelpButtonText(SwitchChars.localized_text, InputBinding.IMPLEMENT_EXTRA4);
 	end;
 end;
 function SwitchChars:updateChar(newChar)
@@ -160,17 +165,15 @@ function SwitchChars:updateChar(newChar)
 					link(newNode, oldNode);
 					link(parent, newNode, insertIndex);
 				end;
+				-- create dummy
+				self.characterGloves = createTransformGroup("gloves");
+			else
+				self.characterGloves = Utils.indexToObject(i3dNode, self.charConf.gloves);
 			end;
 			self.characterSkin = Utils.indexToObject(i3dNode, self.charConf.skin);
 			self.characterMesh = Utils.indexToObject(i3dNode, self.charConf.mesh);
-			if SwitchChars.switchableCharacters[newChar].gloves then
-				self.characterGloves = Utils.indexToObject(i3dNode, self.charConf.gloves);
-			else
-				-- create dummy
-				self.characterGloves = createTransformGroup("gloves");
-			end;
 			self.characterSpineNode = Utils.indexToObject(i3dNode, self.charConf.spineNode);
-			local x,y,z  = Utils.getVectorFromString(self.charConf.offsets);
+			local x,y,z = Utils.getVectorFromString(self.charConf.offsets);
 			setClipDistance(self.characterMesh, 150);
 			link(self.characterNode, self.characterSkin);
 			setTranslation(self.characterSkin, x,y,z);

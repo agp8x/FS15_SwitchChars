@@ -1,15 +1,23 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <modDesc descVersion="23">
     <author>agp8x, Ingolf</author>
-    <version>0.7</version>
+    <version>1.0</version>
 
     <title>
         <en>Switch characters</en>
         <de>Figuren wechseln</de>
     </title>
     <description>
-        <en><![CDATA[Switch characters]]></en>
-        <de><![CDATA[Figuren wechseln]]></de>
+        <en><![CDATA[Switch driver characters
+
+Switch between thirteen different characters for all your vehicles! Switching works in all steerable vehicles with animated characters when they are selected.
+
+An example for an addon of another farmer is in SwitchableCharAddon. Simply modify the character and pack it into a zip file. Just make sure to name it differently. You can even add multiple characters by adding more entries in charactersAddon.xml.]]></en>
+        <de><![CDATA[Fahrerfiguren wechseln
+
+Individualisiere deine Fahrzeuge mit dreizehn verschiedenen Fahrerfiguren! Das wechseln funktioniert in allen steuerbaren Fahrzeugen mit animierten Fahrerfiguren, wenn sie ausgewählt sind.
+
+Ein Beispielmod für zusätzliche Figuren ist im Ordner SwitchableCharAddon. Einfach die Figur, das Modell, die Textur bearbeiten, und mit einem neuen Namen packen, fertig. Ihr könnt sogar mehrere Charactere auf einmal hinzufügen, in dem ihr in der charactersAddon.xml zusätzliche Einträge anlegt.]]></de>
     </description>
 
     <iconFilename>store.dds</iconFilename>

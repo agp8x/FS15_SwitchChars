@@ -1,7 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <vehicle>
+	<!-- not really a vehicle, save aligning of xml paths -->
 	<characters>
-		<char filename="$dataS2/character/player/player.i3d" gloves="true" push="false" />
+		<char filename="$dataS2/character/player/player.i3d" push="false" />
 		<char filename="$dataS2/character/pedestrians/man01.i3d" />
 		<char filename="$dataS2/character/pedestrians/man02.i3d" />
 		<char filename="$dataS2/character/pedestrians/man03.i3d" />

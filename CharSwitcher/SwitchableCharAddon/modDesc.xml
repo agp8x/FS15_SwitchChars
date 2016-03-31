@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<modDesc descVersion="23">
+    <author>agp8x, Ingolf, $YOUR_NAME</author>
+    <version>13.37</version>
+
+    <title>
+        <en>Switch characters addon</en>
+        <de>Figuren wechseln addon</de>
+    </title>
+    <description>
+        <en><![CDATA[Switch characters addon]]></en>
+        <de><![CDATA[Figuren wechseln addon]]></de>
+    </description>
+
+    <iconFilename>store.dds</iconFilename>
+    <multiplayer supported="true"/>
+	<extraSourceFiles>
+        <sourceFile filename="register.lua" />
+    </extraSourceFiles>
+</modDesc>
